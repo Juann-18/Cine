@@ -140,3 +140,31 @@ SELECT
         WHERE p.id_pelicula = 7;
 
 --and Funcion.fecha_hora > GETDATE() order by Funcion.fecha_hora asc;
+
+
+INSERT INTO Boleto (id_funcion, id_usuario, id_asiento)
+VALUES (1, 1, 1); -- Insertar un boleto para la función 1, usuario 1 y asiento 1
+
+INSERT INTO Usuario (nombre, correo, contrasena)
+VALUES ('Juan Pérez', 'juan.perez@example.com', 'contrasena123');
+
+SELECT 
+  a.id_asiento,
+  a.fila + CAST(a.numero AS varchar) AS asiento,
+  b.id_boleto
+FROM Asiento a
+LEFT JOIN Boleto b ON a.id_asiento = b.id_asiento 
+  AND b.id_funcion = 1  
+INNER JOIN Sala s ON a.id_sala = s.id_sala
+WHERE s.id_sala = 1  
+AND b.id_boleto IS NULL;  
+
+
+SELECT 
+  a.id_asiento,
+  a.fila + CAST(a.numero AS varchar) AS asiento
+FROM Funcion f
+INNER JOIN Asiento a ON a.id_sala = f.id_sala
+LEFT JOIN Boleto b ON a.id_asiento = b.id_asiento AND b.id_funcion = f.id_funcion
+WHERE f.id_funcion = 2 
+  AND b.id_boleto IS NULL; 
