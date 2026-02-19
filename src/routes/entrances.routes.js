@@ -5,6 +5,6 @@ const router = Router();
 
 router.get("/:id", getMovieEntrances)
 
-router.put("/:id_pelicula", buyMovieEntrances)
+router.post("/:id", buyMovieEntrances)
 
 export default router;

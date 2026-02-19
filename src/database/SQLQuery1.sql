@@ -168,3 +168,16 @@ INNER JOIN Asiento a ON a.id_sala = f.id_sala
 LEFT JOIN Boleto b ON a.id_asiento = b.id_asiento AND b.id_funcion = f.id_funcion
 WHERE f.id_funcion = 2 
   AND b.id_boleto IS NULL; 
+
+
+
+SELECT 
+  f.id_funcion,
+  COUNT(b.id_boleto) AS boletos_reservados,
+  s.capacidad - COUNT(b.id_boleto) AS asientos_disponibles
+FROM Funcion f
+INNER JOIN Sala s ON f.id_sala = s.id_sala
+LEFT JOIN Boleto b ON b.id_funcion = f.id_funcion 
+  AND b.estado = 'RESERVADO' 
+WHERE f.id_funcion = 1
+GROUP BY f.id_funcion, f.fecha_hora, s.nombre, s.capacidad;
