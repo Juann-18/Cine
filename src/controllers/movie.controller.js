@@ -38,6 +38,25 @@ export const createMovie = async (req, res) => {
   }
 }
 
+export const createFuncion = async (req, res)  => {
+  try {
+    const pool = await getCongetion();
+
+    const result = await pool.request()
+    .input("id_pelicula", sql.Int, req.body.id_pelicula)
+    .input("id_sala", sql.Int, req.body.id_sala)
+    .query(`
+      INSERT INTO Funcion (id_pelicula, id_sala, fecha_hora) 
+      VALLUES (@id_pelicula, @id_sala, @fecha_hora, GETDATE()) SELECT SCOPE_IDENTITY() AS id_Funcion; 
+    `)
+
+    res.json({ id_funcion: result.recordset[0].id_funcion})
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ success: false, error: error.message })
+}
+}
+
 //obtiene todas las peliculas 
 export const getMovies = async (req, res) => {
   const pool = await getCongetion();

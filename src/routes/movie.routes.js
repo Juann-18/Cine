@@ -5,6 +5,8 @@ const router = Router();
 
 router.post("/",createMovie)
 
+router.post("/:id")
+
 router.get("/", getMovies)
 
 router.get("/:id", getMovieById)
