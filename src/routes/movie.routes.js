@@ -5,7 +5,7 @@ const router = Router();
 
 router.post("/",createMovie)
 
-router.post("/:id")
+// router.post("/:id",)
 
 router.get("/", getMovies)
 
