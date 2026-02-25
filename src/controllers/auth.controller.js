@@ -15,13 +15,13 @@ export const register = async (req, res)=> {
         .input("name", sql.VarChar, name)
         .input("email", sql.VarChar, email)
         .input("password", sql.VarChar, passwordHash)
-        .query(`INSERT INTO Usuario (nombre, correo, contrasena ) VALUES (@name, @email, @password) SELECT SCOPE_IDENTITY() AS id_usuario;`)
+        .query(`INSERT INTO User (name, email, password ) VALUES (@name, @email, @password) SELECT SCOPE_IDENTITY() AS id_user;`)
         
-        const token = await createAccestToken({ id: result.recordset[0].id_usuario })
+        const token = await createAccestToken({ id: result.recordset[0].id_user })
         res.cookie("token", token)
         res.json({
-            id_usuario: result.recordset[0].id_usuario,
-            nombre: name,
+            id_user: result.recordset[0].id_user,
+            name: name,
             email: email
         })
 

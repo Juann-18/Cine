@@ -3,24 +3,24 @@ import getConnection from "../database/connetion.js";
 
 export const getMovieEntrances = async (req, res) => {
   try {
-    const id_funcion = req.params.id;
+    const id_show = req.params.id;
 
-    if(!id_funcion){
+    if(!id_show){
       return res.status(404).json({ succes: false, error: "El id de la funcion es requerido"})
     }
     const pool = await getConnection();
 
     const result = await pool.request()
-    .input("id_funcion", sql.Int, id_funcion)
+    .input("id_show", sql.Int, id_show)
     .query(`
       SELECT 
-        a.id_asiento,
-        a.fila + CAST(a.numero AS varchar) AS asiento
-        FROM Funcion f
-      INNER JOIN Asiento a ON a.id_sala = f.id_sala
-      LEFT JOIN Boleto b ON a.id_asiento = b.id_asiento AND b.id_funcion = f.id_funcion
-      WHERE f.id_funcion = @id_funcion
-        AND b.id_boleto IS NULL; 
+        a.id_seat,
+        a.row + CAST(a.number AS varchar) AS seat
+        FROM Show f
+      INNER JOIN Seat a ON a.id_room = f.id_room
+      LEFT JOIN Ticket b ON a.id_seat = b.id_seat AND b.id_show = f.id_show
+      WHERE f.id_show = @id_show
+        AND b.id_ticket IS NULL; 
     `)
 
     if(result.recordset.length === 0){
@@ -37,43 +37,43 @@ export const getMovieEntrances = async (req, res) => {
 
 export const buyMovieEntrances = async (req, res) => {
   try {
-      const id_funcion = req.params.id;
+      const id_show = req.params.id;
 
-  if(!id_funcion){
+  if(!id_show){
     return res.status(404).json({succes: false, error: "El id de la funcion es requerido"})
   }
 
   const pool = await getConnection()
 
   const verification = await pool.request()
-  .input("id_funcion",  sql.VarChar, id_funcion)
+  .input("id_show",  sql.VarChar, id_show)
   .query(`
     SELECT 
-      f.id_funcion,
-      COUNT(b.id_boleto) AS boletos_reservados,
-      s.capacidad - COUNT(b.id_boleto) AS asientos_disponibles
-    FROM Funcion f
-    INNER JOIN Sala s ON f.id_sala = s.id_sala
-    LEFT JOIN Boleto b ON b.id_funcion = f.id_funcion 
-      AND b.estado = 'RESERVADO' 
-    WHERE f.id_funcion = @id_funcion
-    GROUP BY f.id_funcion, f.fecha_hora, s.nombre, s.capacidad;
+      f.id_show,
+      COUNT(b.id_ticket) AS tickets_reserved,
+      s.capacity - COUNT(b.id_ticket) AS seats_available
+    FROM Show f
+    INNER JOIN Room s ON f.id_room = s.id_room
+    LEFT JOIN Ticket b ON b.id_show = f.id_show 
+      AND b.status = 'RESERVED' 
+    WHERE f.id_show = @id_show
+    GROUP BY f.id_show, f.date_time, s.name, s.capacity;
   `) 
 
-  if(verification.recordset[0].asientos_disponibles === 0){
+  if(verification.recordset[0].seats_available === 0){
     return res.status(404).json({ message: "Sin asientos disponibles"})
   }
 
   const result = await pool.request()
-  .input('id_funcion', sql.Int, id_funcion)  
-  .input('id_usuario', sql.Int, req.body.id_usuario)          
-  .input('id_asiento', sql.Int, req.body.id_asiento)  
+  .input('id_show', sql.Int, id_show)  
+  .input('id_user', sql.Int, req.body.id_user)          
+  .input('id_seat', sql.Int, req.body.id_seat)  
   .query(`
-    INSERT INTO Boleto (id_funcion, id_usuario, id_asiento, estado, fecha_compra)
-    VALUES (@id_funcion, @id_usuario, @id_asiento, 'RESERVADO', GETDATE()) SELECT SCOPE_IDENTITY() AS id_boleto;
+    INSERT INTO Ticket (id_show, id_user, id_seat, status, purchase_date)
+    VALUES (@id_show, @id_user, @id_seat, 'RESERVED', GETDATE()) SELECT SCOPE_IDENTITY() AS id_ticket;
   `);
 
-  res.send(result.recordset[0].id_boleto)
+  res.send(result.recordset[0].id_ticket)
   } catch (error) {
     console.log(error)
     res.status(500).json({succes: false, error: error.message})
