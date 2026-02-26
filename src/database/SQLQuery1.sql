@@ -40,7 +40,8 @@ create table User (
 id_user int identity(1,1) primary key,
 name varchar(50) not null,
 email varchar(100) unique,
-password varchar(200)
+password varchar(200),
+role varchar(20) NOT NULL DEFAULT 'user'
 );
 
 create table Ticket(
@@ -145,6 +146,12 @@ SELECT
 INSERT INTO Ticket (id_show, id_user, id_seat)
 VALUES (1, 1, 1); -- Insertar un boleto para la función 1, usuario 1 y asiento 1
 
+-- Si la tabla ya existe y no tiene la columna role, la agregamos
+IF COL_LENGTH('User','role') IS NULL
+BEGIN
+    ALTER TABLE [User] ADD role varchar(20) NOT NULL DEFAULT 'user';
+END
+
 INSERT INTO User (name, email, password)
 VALUES ('Juan Pérez', 'juan.perez@example.com', 'contrasena123');
 
@@ -239,3 +246,10 @@ EXEC sp_rename 'Ticket.FK_Boleto_Funcion', 'FK_Ticket_Show', 'INDEX';
 EXEC sp_rename 'Ticket.FK_Boleto_Usuario', 'FK_Ticket_User', 'INDEX';
 EXEC sp_rename 'Ticket.FK_Boleto_Asiento', 'FK_Ticket_Seat', 'INDEX';
 EXEC sp_rename 'Ticket.UQ_Boleto', 'UQ_Ticket', 'INDEX';
+
+
+-- Si la tabla ya existe y no tiene la columna role, la agregamos
+IF COL_LENGTH('User','role') IS NULL
+BEGIN
+    ALTER TABLE [User] ADD role varchar(20) NOT NULL DEFAULT 'user';
+END
