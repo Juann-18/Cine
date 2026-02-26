@@ -5,7 +5,7 @@ import { createAccestToken } from "../libs/jwt.js";
 
 
 export const register = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, role } = req.body;
   const pool = await getConnection();
   try {
     const emailFound = await pool.request()
@@ -21,14 +21,16 @@ export const register = async (req, res) => {
       .input("name", sql.VarChar, name)
       .input("email", sql.VarChar, email)
       .input("password", sql.VarChar, passwordHash)
-      .query(`INSERT INTO [User] (name, email, password ) VALUES (@name, @email, @password) SELECT SCOPE_IDENTITY() AS id_user;`)
+      .input("role", sql.VarChar, role)
+      .query(`INSERT INTO [User] (name, email, password, role ) VALUES (@name, @email, @password, @role) SELECT SCOPE_IDENTITY() AS id_user;`)
 
-    const token = await createAccestToken({ id: result.recordset[0].id_user })
+    const token = await createAccestToken({ id: result.recordset[0].id_user, role: role })
     res.cookie("token", token)
     res.json({
       id_user: result.recordset[0].id_user,
       name: name,
-      email: email
+      email: email,
+      role: req.role
     })
 
   } catch (error) {
@@ -51,13 +53,14 @@ export const login = async (req, res) => {
     const isMatch = await bcrypt.compare(password, userFound.recordset[0].password)
     if (!isMatch) return res.status(400).json({ message: "Incorrect Password" })
 
-    const token = await createAccestToken({ id: userFound.recordset[0].id_user })
+    const token = await createAccestToken({ id: userFound.recordset[0].id_user, role: userFound.recordset[0].role })
     const data = userFound.recordset[0]
     res.cookie("token", token)
     res.json({
       id_user: data.id_user,
       name: data.name,
-      email: data.email
+      email: data.email,
+      role: data.role
     })
 
   } catch (error) {
