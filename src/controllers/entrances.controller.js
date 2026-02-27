@@ -1,6 +1,7 @@
 import sql from "mssql"
 import getConnection from "../database/connetion.js";
 
+//recopila y devuel los asientos libres de una funcion 
 export const getMovieEntrances = async (req, res) => {
   try {
     const id_show = req.params.id;
@@ -35,6 +36,7 @@ export const getMovieEntrances = async (req, res) => {
   }
 }
 
+//compra una entrada a la pelicula 
 export const buyMovieEntrances = async (req, res) => {
   try {
       const id_show = req.params.id;

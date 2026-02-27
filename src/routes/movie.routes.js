@@ -1,9 +1,10 @@
 import { Router } from "express";
+import { authRequired, roleCheck } from "../middlewares/validateToken.js";
 import {createMovie, getMovieById, getMovies } from "../controllers/movie.controller.js";
 
 const router = Router();
 
-router.post("/",createMovie)
+router.post("/",authRequired, roleCheck, createMovie)
 
 // router.post("/:id",)
 
