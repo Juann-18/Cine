@@ -48,10 +48,10 @@ export const login = async (req, res) => {
       .input("email", sql.VarChar, email)
       .query(`SELECT * FROM [User] WHERE email = @email;`)
     console.log(userFound.recordset)
-    if (userFound.recordset.length === 0) return res.status(400).json({ message: "User not found" })
+    if (userFound.recordset.length === 0) return res.status(401).json({ message: "User not found" })
 
     const isMatch = await bcrypt.compare(password, userFound.recordset[0].password)
-    if (!isMatch) return res.status(400).json({ message: "Incorrect Password" })
+    if (!isMatch) return res.status(401).json({ message: "Incorrect Password" })
 
     const token = await createAccestToken({ id: userFound.recordset[0].id_user, role: userFound.recordset[0].role })
     const data = userFound.recordset[0]
