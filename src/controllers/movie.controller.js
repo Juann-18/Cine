@@ -25,12 +25,23 @@ export const createMovie = async (req, res) => {
       .input("image", sql.VarChar, resultCloudinary.secure_url)
       .query("UPDATE Movie SET image = @image WHERE id_movie = @id")
 
+      // Insertar géneros si se proporcionan
+      if (req.body.genres && Array.isArray(req.body.genres) && req.body.genres.length > 0) {
+        const movieId = result.recordset[0].id_movie;
+        for (const genreId of req.body.genres) {
+          await pool.request()
+            .input("id_movie", sql.Int, movieId)
+            .input("id_genre", sql.Int, genreId)
+            .query("INSERT INTO Movie_Genre (id_movie, id_genre) VALUES (@id_movie, @id_genre)");
+        }
+      }
+
     res.json({
       id_movie: result.recordset[0].id_movie,
       title: req.body.title,
       description: req.body.description,
-      image: req.body.image,
-      duration_min: req.body.duration_min
+      duration_min: req.body.duration_min,
+      genres: req.body.genres || []
     });
   } catch (error) {
     console.error(error);
@@ -58,19 +69,67 @@ export const createShow = async (req, res)  => {
 }
 }
 
-//obtiene todas las peliculas 
+//obtiene todas las peliculas con sus géneros y shows
 export const getMovies = async (req, res) => {
-  const pool = await getCongetion();
-  const result = pool.request().query('SELECT * FROM Movie')
-  console.log(result)
-  res.json(result.recordset)
+  try {
+    const pool = await getCongetion();
+
+    // Obtener películas con géneros
+    const moviesResult = await pool.request().query(`
+      SELECT
+        m.id_movie,
+        m.title,
+        m.description,
+        m.image,
+        m.duration_min,
+        STRING_AGG(g.name, ', ') AS genres
+      FROM Movie m
+      LEFT JOIN Movie_Genre mg ON m.id_movie = mg.id_movie
+      LEFT JOIN Genre g ON mg.id_genre = g.id_genre
+      GROUP BY m.id_movie, m.title, m.description, m.image, m.duration_min
+      ORDER BY m.title
+    `)
+
+    // Obtener shows para todas las películas
+    const showsResult = await pool.request().query(`
+      SELECT
+        s.id_movie,
+        s.id_show,
+        s.id_room,
+        s.date_time,
+        r.name AS room
+      FROM Show s
+      INNER JOIN Room r ON s.id_room = r.id_room
+      WHERE s.date_time >= GETDATE()
+      ORDER BY s.id_movie, s.date_time
+    `)
+
+    // Combinar películas con sus shows
+    const moviesWithShows = moviesResult.recordset.map(movie => {
+      const movieShows = showsResult.recordset.filter(show => show.id_movie === movie.id_movie)
+      return {
+        ...movie,
+        genres: movie.genres || '',
+        shows: movieShows.map(show => ({
+          id_show: show.id_show,
+          id_room: show.id_room,
+          date_time: show.date_time,
+          room: show.room
+        }))
+      }
+    })
+
+    res.json(moviesWithShows)
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message})
+  }
 }
 
-//obtinen una pelicula por el id
+//obtinen una pelicula por el id con géneros y shows
 export const getMovieById = async (req,res) => {
   try {
     const id_movie = req.params.id;
-    
+
     if(!id_movie){
       return res.status(400).json({ success: false, error: "El id de la pelicula es requerido"})
     }
@@ -79,44 +138,57 @@ export const getMovieById = async (req,res) => {
 
     const movieResult = await pool.request()
     .input("id", sql.Int, id_movie)
-    .query(`SELECT 
-        p.id_movie, p.title, p.description, p.image, p.duration_min
-      FROM Movie p
-        WHERE p.id_movie = @id`)
+    .query(`
+      SELECT
+        m.id_movie,
+        m.title,
+        m.description,
+        m.image,
+        m.duration_min,
+        STRING_AGG(g.name, ', ') AS genres
+      FROM Movie m
+      LEFT JOIN Movie_Genre mg ON m.id_movie = mg.id_movie
+      LEFT JOIN Genre g ON mg.id_genre = g.id_genre
+      WHERE m.id_movie = @id
+      GROUP BY m.id_movie, m.title, m.description, m.image, m.duration_min
+    `)
 
     if(movieResult.recordset.length === 0 ){
-      return res.status(404).json({ error: "Pelicula no encotrada"})
+      return res.status(404).json({ error: "Pelicula no encontrada"})
     }
 
     const showResult = await pool.request()
     .input("id", sql.Int, id_movie)
-    .query(`SELECT f.*, s.name AS room
-      FROM Show f
-      INNER JOIN Room s ON f.id_room = s.id_room
-      WHERE f.id_movie = @id`)
+    .query(`
+      SELECT
+        s.id_show,
+        s.id_room,
+        s.date_time,
+        r.name AS room
+      FROM Show s
+      INNER JOIN Room r ON s.id_room = r.id_room
+      WHERE s.id_movie = @id
+      AND s.date_time >= GETDATE()
+      ORDER BY s.date_time
+    `)
 
-      if(showResult.recordset.length === 0){
-        return res.status(404).json({ error: "Funciones no encontradas"})
-      }
-
-      console.log("Funciones encontradas:", showResult.recordset); 
-
-    const data = movieResult.recordset[0];
+    const movie = movieResult.recordset[0];
 
     res.json({
       movie: {
-        id: data.id_movie,
-        title: data.title,
-        description: data.description,
-        image: data.image,
-        duration_min: data.duration_min
+        id: movie.id_movie,
+        title: movie.title,
+        description: movie.description,
+        image: movie.image,
+        duration_min: movie.duration_min,
+        genres: movie.genres || ''
       },
-      show: showResult.recordset
+      shows: showResult.recordset
     })
   } catch (error) {
     console.log(error.message, "este mensaje")
     res.status(500).json({ success: false, error: error.message})
   }
-
 }
+
 
