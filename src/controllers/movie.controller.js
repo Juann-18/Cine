@@ -164,7 +164,8 @@ export const getMovieById = async (req,res) => {
         s.id_show,
         s.id_room,
         s.date_time,
-        r.name AS room
+        r.name AS room,
+        r.capacity
       FROM Show s
       INNER JOIN Room r ON s.id_room = r.id_room
       WHERE s.id_movie = @id

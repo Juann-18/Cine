@@ -13,12 +13,13 @@ app.listen(3000)
 
 app.use(cors({
     origin:  'http://localhost:8080',
+    credentials: true
 }));
 app.use(morgan("dev"));
 app.use(express.json())
 app.use(cookieParser())
 
-app.use("/movie",moviesRouter)
+app.use("/movies",moviesRouter)
 app.use("/entrances", entrancesRouter)
 app.use("/auth", authRouter)
 console.log("servidor iniciado....")

@@ -2,6 +2,7 @@ import sql from "mssql"
 import bcrypt from "bcryptjs";
 import getConnection from "../database/connetion.js"
 import { createAccestToken } from "../libs/jwt.js";
+import jwt from "jsonwebtoken";
 
 
 export const register = async (req, res) => {
@@ -30,7 +31,7 @@ export const register = async (req, res) => {
       id_user: result.recordset[0].id_user,
       name: name,
       email: email,
-      role: req.role
+      role: role
     })
 
   } catch (error) {
@@ -71,7 +72,7 @@ export const login = async (req, res) => {
 
 export const logout = (req, res) => {
   res.cookie("token", "", {
-    expiret: new Date(0)
+    expires: new Date(0)
   })
   return res.sendStatus(200);
 }
@@ -83,7 +84,7 @@ export const profile = async(req, res) => {
     .input("id", sql.Int, req.user.id)
     .query("SELECT * FROM [User] WHERE id_user = @id")
 
-    if(user.recordset[0].length === 0) return res.status(400).json({ message: "User not found."})
+    if(user.recordset.length === 0) return res.status(400).json({ message: "User not found."})
     
     const data = user.recordset[0]
     res.json({
@@ -94,4 +95,32 @@ export const profile = async(req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
+}
+
+export const verifyToke = async ( req, res ) =>{
+  const { token } = req.cookies
+
+  if(!token) return res.status(401).json({ message: "Unauthorized" })
+
+  jwt.verify(token, process.env.API_KEY_SECRET, async (err, decoded) => {
+    if(err) return res.status(401).json({ message: "Unauthorized" })
+
+    const pool = await getConnection();
+
+    const user = await pool.request()
+    .input("id", sql.Int, decoded.id)
+    .query("SELECT * FROM [User] WHERE id_user = @id")
+
+    if(user.recordset.length === 0) return res.status(400).json({ message: "User not found."})
+
+    const data = user.recordset[0]
+    res.json({
+      id: data.id_user,
+      name: data.name,
+      email: data.email,
+      role: data.role
+    })
+  })
+
+  
 }
